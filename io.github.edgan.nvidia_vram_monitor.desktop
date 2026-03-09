@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=NVIDIA VRAM Monitor
+Comment=Monitor GPU VRAM usage with OOM warnings
+Exec=nvidia_vram_monitor.py
+Icon=video-display
+Type=Application
+Categories=System;Monitor;
+StartupNotify=false
