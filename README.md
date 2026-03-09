@@ -19,6 +19,14 @@ VRAM_WARN_THRESHOLD=30 ./nvidia_vram_monitor.py
   <source height=240px media="(prefers-color-scheme: dark)" srcset="/screenshots/window.png" />
   <img height=240px src="/screenshots/window.png" />
 </picture>
+<picture>
+  <source height=240px media="(prefers-color-scheme: dark)" srcset="/screenshots/notification.png" />
+  <img height=240px src="/screenshots/notification.png" />
+</picture>
+<picture>
+  <source height=240px media="(prefers-color-scheme: dark)" srcset="/screenshots/window-warning.png" />
+  <img height=240px src="/screenshots/window-warning.png" />
+</picture>
 
 ## Dependencies
 
