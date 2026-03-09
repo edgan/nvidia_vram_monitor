@@ -49,3 +49,23 @@ sudo apt-get install gcc libgirepository1.0-dev libcairo2-dev pkg-config python3
 
 # .desktop
 There is an example `.desktop` file. You need to call the application from it to allow the notifications to work.
+
+Change 
+
+```
+Exec=/install/path/nvidia_vram_monitor.py
+```
+
+to
+
+```
+Exec=env VRAM_WARN_THRESHOLD=30 /install/path/nvidia_vram_monitor.py
+```
+
+to set the environment variable
+
+Command to refresh Gnome when you change the `.desktop` file:
+
+```
+update-desktop-database ~/.local/share/applications/ 2>&1
+```
