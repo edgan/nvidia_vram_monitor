@@ -14,12 +14,15 @@ VRAM_WARN_THRESHOLD = int(os.environ.get("VRAM_WARN_THRESHOLD", 90))
 
 
 def query_vram():
-    """Query nvidia-smi for VRAM usage. Returns (used_mib, total_mib) or None."""
+    """Query nvidia-smi for VRAM usage and temperature.
+
+    Returns (used_mib, total_mib, temp_celsius) or None.
+    """
     try:
         result = subprocess.run(
             [
                 "nvidia-smi",
-                "--query-gpu=memory.used,memory.total",
+                "--query-gpu=memory.used,memory.total,temperature.gpu",
                 "--format=csv,noheader,nounits",
             ],
             capture_output=True,
@@ -28,7 +31,7 @@ def query_vram():
         )
         if result.returncode == 0:
             parts = result.stdout.strip().split(", ")
-            return int(parts[0]), int(parts[1])
+            return int(parts[0]), int(parts[1]), int(parts[2])
     except (subprocess.TimeoutExpired, FileNotFoundError, ValueError, IndexError):
         pass
     return None
@@ -109,10 +112,10 @@ def run_tray():
     def _poll_label():
         data = query_vram()
         if data:
-            used, total = data
+            used, total, temp = data
             pct = (used / total) * 100.0
-            indicator.set_label(f" {pct:.0f}%", "")
-            usage_item.set_label(f"VRAM: {used} / {total} MiB ({pct:.1f}%)")
+            indicator.set_label(f" {pct:.0f}% · {temp}°C", "")
+            usage_item.set_label(f"VRAM: {used} / {total} MiB ({pct:.1f}%) · {temp}°C")
         else:
             indicator.set_label(" ?%", "")
             usage_item.set_label("VRAM: unavailable")
@@ -194,6 +197,17 @@ def run_app():
 
             inner.append(bar_box)
 
+            temp_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            temp_title = Gtk.Label(label="Temperature")
+            temp_title.set_halign(Gtk.Align.START)
+            temp_title.set_hexpand(True)
+            temp_title.add_css_class("heading")
+            self.temp_label = Gtk.Label(label="—°C")
+            self.temp_label.add_css_class("heading")
+            temp_box.append(temp_title)
+            temp_box.append(self.temp_label)
+            inner.append(temp_box)
+
             self.status_label = Gtk.Label(label="Monitoring…")
             self.status_label.set_halign(Gtk.Align.START)
             self.status_label.set_wrap(True)
@@ -223,10 +237,11 @@ def run_app():
             except (subprocess.TimeoutExpired, FileNotFoundError):
                 self.gpu_label.set_label("GPU: unknown")
 
-        def update(self, used, total, pct):
+        def update(self, used, total, pct, temp):
             self.progress.set_fraction(pct / 100.0)
             self.pct_label.set_label(f"{pct:.1f}%")
             self.usage_label.set_label(f"{used} MiB / {total} MiB")
+            self.temp_label.set_label(f"{temp}°C")
 
             self.progress.remove_css_class("warning-bar")
             self.progress.remove_css_class("critical-bar")
@@ -317,13 +332,13 @@ def run_app():
         def _poll(self):
             data = query_vram()
             if data:
-                used, total = data
+                used, total, temp = data
                 pct = (used / total) * 100.0
                 if self._window:
-                    self._window.update(used, total, pct)
+                    self._window.update(used, total, pct, temp)
 
                 if pct >= VRAM_WARN_THRESHOLD and not self._warned:
-                    self._send_warning(used, total, pct)
+                    self._send_warning(used, total, pct, temp)
                     self._warned = True
                 elif pct < VRAM_WARN_THRESHOLD - 5:
                     self._warned = False
@@ -332,10 +347,11 @@ def run_app():
                     self._window.show_error("Failed to query nvidia-smi")
             return True
 
-        def _send_warning(self, used, total, pct):
+        def _send_warning(self, used, total, pct, temp):
             notification = Gio.Notification.new("VRAM Usage Critical!")
             notification.set_body(
                 f"GPU VRAM is at {pct:.1f}% ({used} MiB / {total} MiB)\n"
+                f"GPU Temperature: {temp}°C\n"
                 f"Consider closing some GPU applications."
             )
             notification.set_priority(Gio.NotificationPriority.URGENT)
