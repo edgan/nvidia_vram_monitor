@@ -6,7 +6,9 @@ There is an environment variable `VRAM_WARN_THRESHOLD` to let you override the d
 
 Example:
 
+```
 VRAM_WARN_THRESHOLD=30 ./nvidia_vram_monitor.py
+```
 
 ## Screenshots
 <picture>
